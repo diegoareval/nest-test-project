@@ -8,19 +8,29 @@ export class JsonSerializerHelper {
     return inputArray.Records.map((record) => {
       const sesDTO = plainToInstance(SesDtoSlice, record.ses);
       return {
-        spam: Boolean(sesDTO.receipt.spamVerdict.status === 'PASS'),
-        virus: Boolean(sesDTO.receipt.virusVerdict.status === 'PASS'),
+        spam: this.isStatusPass(sesDTO.receipt.spamVerdict.status),
+        virus: this.isStatusPass(sesDTO.receipt.virusVerdict.status),
         dns: Boolean(
-          sesDTO.receipt.spfVerdict.status === 'PASS' &&
-            sesDTO.receipt.dkimVerdict.status === 'PASS' &&
-            sesDTO.receipt.dmarcVerdict.status === 'PASS',
+          this.isStatusPass(sesDTO.receipt.spfVerdict.status) &&
+            this.isStatusPass(sesDTO.receipt.dkimVerdict.status) &&
+            this.isStatusPass(sesDTO.receipt.dmarcVerdict.status),
         ),
         mes: this.formatTimestamp(sesDTO.mail.timestamp),
-        retrasado: Boolean(sesDTO.receipt.processingTimeMillis > 1000),
+        retrasado: this.isProcessingTimeDelayed(
+          sesDTO.receipt.processingTimeMillis,
+        ),
         emisor: this.extractUsername(sesDTO.mail.source),
         receptor: this.extractUsernames(sesDTO.mail.destination),
       };
     });
+  }
+
+  private isStatusPass(value: string, valueShouldBe: string = 'PASS'): boolean {
+    return value === valueShouldBe;
+  }
+
+  private isProcessingTimeDelayed(value: number): boolean {
+    return value > 1000;
   }
 
   private formatTimestamp(timestamp: string): string {
