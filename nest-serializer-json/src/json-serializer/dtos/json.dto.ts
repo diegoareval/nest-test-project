@@ -165,7 +165,7 @@ class MailDTO {
   commonHeaders: CommonHeadersDTO;
 }
 
-class SesDtoSlice {
+export class SesDtoSlice {
   @ApiProperty({ type: ReceiptDTO })
   @IsObject()
   @ValidateNested()
@@ -179,7 +179,7 @@ class SesDtoSlice {
   mail: MailDTO;
 }
 
-class SesDTO {
+export class SesDTO {
   @ApiProperty()
   @IsString()
   eventVersion: string;

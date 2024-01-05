@@ -1,10 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { JsonSerializerDTO, ProcessedJsonDTO } from './dtos';
-import { mapToProcessedJsonArray } from './helpers';
+import { JsonSerializerHelper } from './json-serializer.helper';
 
 @Injectable()
 export class JsonSerializerService {
-  processEmails(records: JsonSerializerDTO): any {
-    return mapToProcessedJsonArray(records);
+  constructor(private readonly jsonSerializerHelper: JsonSerializerHelper) {}
+  processEmails(records: JsonSerializerDTO): ProcessedJsonDTO {
+    return this.jsonSerializerHelper.mapToProcessedJsonArray(records).shift();
   }
 }
