@@ -1,4 +1,3 @@
-// src/json-serializer/json-serializer.dto.ts
 import { IsString, IsObject, ValidateNested, IsArray, IsBoolean, IsNumber } from 'class-validator';
 import { Type } from 'class-transformer';
 

@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { plainToClass } from 'class-transformer';
 import { JsonSerializerDTO, ProcessedJsonDTO } from './dtos';
-import { mapToProcessedJsonArray } from './helpers/json-mapper';
+import { mapToProcessedJsonArray } from './helpers';
 
 @Injectable()
 export class JsonSerializerService {
