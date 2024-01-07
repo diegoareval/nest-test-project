@@ -1,25 +1,75 @@
 import { Injectable } from '@nestjs/common';
 import * as fs from 'fs';
-import { MailParser } from 'mailparser';
+import { MailParser, Headers } from 'mailparser';
+import { EmailData } from './interfaces/email-processed.interface';
 
 @Injectable()
 export class EmailService {
-  async parseEmail(filePath: string): Promise<any> {
-    return new Promise((resolve, reject) => {
-      const fileStream = fs.createReadStream(filePath);
-      const mailparser = new MailParser({});
+  private parser: MailParser;
 
-      mailparser.on('data', (data: any) => {
-        if (data.type === 'attachment' && data.filename === 'data.json') {
-          resolve(JSON.parse(data.content.toString()));
-        }
-      });
+  constructor() {
+    this.parser = new MailParser();
+    this.setupParser();
+  }
 
-      mailparser.on('end', () => {
-        reject('JSON attachment not found in the email.');
-      });
-
-      fileStream.pipe(mailparser);
+  private setupParser(): void {
+    this.parser.on('headers', (headers: Headers) => {
+      const headerObj = Object.fromEntries(headers);
+      this.mailObject.headers = headerObj;
     });
+
+    this.parser.on('data', (data) => {
+      if (data.type === 'attachment') {
+        this.mailObject.attachments.push(data);
+        data.content.on('readable', () => data.content.read());
+        data.content.on('end', () => data.release());
+      } else {
+        this.mailObject.text = data;
+      }
+    });
+
+    this.parser.on('end', () => {
+      this.resolvePromise(this.mailObject);
+    });
+
+    this.parser.on('error', (err) => {
+      console.log('error', err);
+      this.rejectPromise(err);
+    });
+  }
+
+  private mailObject = {
+    attachments: [],
+    text: {},
+    headers: {},
+  };
+
+  private promiseResolver: (value?: any) => void;
+  private promiseRejecter: (reason?: any) => void;
+
+  private createPromise(): Promise<EmailData | never> {
+    return new Promise((resolve, reject) => {
+      this.promiseResolver = resolve;
+      this.promiseRejecter = reject;
+    });
+  }
+
+  private resolvePromise(value?: any): void {
+    if (this.promiseResolver) {
+      this.promiseResolver(value);
+    }
+  }
+
+  private rejectPromise(reason?: any): void {
+    if (this.promiseRejecter) {
+      this.promiseRejecter(reason);
+    }
+  }
+
+  async parseEmail(filePath: string): Promise<EmailData | never> {
+    const input = fs.createReadStream(filePath);
+    input.pipe(this.parser);
+
+    return this.createPromise();
   }
 }
