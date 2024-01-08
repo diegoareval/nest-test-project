@@ -1,11 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import * as fs from 'fs';
 import { MailParser, Headers } from 'mailparser';
-import { EmailData, EmailServiceInterface } from './interfaces';
+import { EmailData } from './interfaces/email-processed.interface';
 
 @Injectable()
-export class EmailService implements EmailServiceInterface{
+export class EmailService {
   private parser: MailParser;
+
 
   constructor() {
     this.parser = new MailParser();
@@ -19,11 +20,20 @@ export class EmailService implements EmailServiceInterface{
     });
 
     this.parser.on('data', (data) => {
-      console.log("data", data.type)
       if (data.type === 'attachment') {
-        this.mailObject.attachments.push(data);
-        data.content.on('readable', () => data.content.read());
-        data.content.on('end', () => data.release());
+        const attachment = {
+          filename: data.filename,
+          content: '',
+        };
+
+        data.content.on('data', (chunk: Buffer) => {
+          attachment.content += chunk.toString();
+        });
+
+        data.content.on('end', () => {
+          this.mailObject.attachments.push(attachment);
+          data.release();
+        });
       } else {
         this.mailObject.text = data;
       }
@@ -38,15 +48,16 @@ export class EmailService implements EmailServiceInterface{
       this.rejectPromise(err);
     });
   }
+  
+
+  private promiseResolver: (value?: any) => void;
+  private promiseRejecter: (reason?: any) => void;
 
   private mailObject = {
     attachments: [],
     text: {},
     headers: {},
   };
-
-  private promiseResolver: (value?: any) => void;
-  private promiseRejecter: (reason?: any) => void;
 
   private createPromise(): Promise<EmailData | never> {
     return new Promise((resolve, reject) => {
