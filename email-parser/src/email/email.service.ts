@@ -1,7 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import * as fs from 'fs';
 import { MailParser, Headers } from 'mailparser';
-import { EmailData } from './interfaces/email-processed.interface';
+import { EmailData, Attachment, MailObject } from './interfaces';
+
 
 @Injectable()
 export class EmailService {
@@ -21,7 +22,7 @@ export class EmailService {
 
     this.parser.on('data', (data) => {
       if (data.type === 'attachment') {
-        const attachment = {
+        const attachment: Attachment = {
           filename: data.filename,
           content: '',
         };
@@ -50,10 +51,10 @@ export class EmailService {
   }
   
 
-  private promiseResolver: (value?: any) => void;
+  private promiseResolver: (value?: MailObject) => void;
   private promiseRejecter: (reason?: any) => void;
 
-  private mailObject = {
+  private mailObject: MailObject = {
     attachments: [],
     text: {},
     headers: {},
