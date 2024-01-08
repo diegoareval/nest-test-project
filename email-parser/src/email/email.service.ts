@@ -1,13 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import * as fs from 'fs';
 import { MailParser, Headers } from 'mailparser';
-import { EmailData, Attachment, MailObject } from './interfaces';
-
+import { EmailData, Attachment, MailObject, DataType } from './interfaces';
 
 @Injectable()
 export class EmailService {
   private parser: MailParser;
-
 
   constructor() {
     this.parser = new MailParser();
@@ -21,7 +19,7 @@ export class EmailService {
     });
 
     this.parser.on('data', (data) => {
-      if (data.type === 'attachment') {
+      if (data.type === DataType.Attachment) {
         const attachment: Attachment = {
           filename: data.filename,
           content: '',
@@ -49,7 +47,6 @@ export class EmailService {
       this.rejectPromise(err);
     });
   }
-  
 
   private promiseResolver: (value?: MailObject) => void;
   private promiseRejecter: (reason?: any) => void;
