@@ -1,10 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import * as fs from 'fs';
 import { MailParser, Headers } from 'mailparser';
-import { EmailData } from './interfaces/email-processed.interface';
+import { EmailData, EmailServiceInterface } from './interfaces';
 
 @Injectable()
-export class EmailService {
+export class EmailService implements EmailServiceInterface{
   private parser: MailParser;
 
   constructor() {
@@ -19,6 +19,7 @@ export class EmailService {
     });
 
     this.parser.on('data', (data) => {
+      console.log("data", data.type)
       if (data.type === 'attachment') {
         this.mailObject.attachments.push(data);
         data.content.on('readable', () => data.content.read());
