@@ -1,14 +1,23 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import * as fs from 'fs';
 import { MailParser, Headers } from 'mailparser';
-import { EmailData, Attachment, MailObject, DataType } from './interfaces';
+import { EmailData, MailObject, EmailParsingStrategy } from './interfaces';
 
 @Injectable()
 export class EmailService {
-  private parser: MailParser;
 
-  constructor() {
+  private parser: MailParser;
+  private mailObject: MailObject;
+  private parsingStrategy: EmailParsingStrategy;
+
+  constructor(@Inject('EmailParsingStrategy') private readonly strategy: EmailParsingStrategy) {
     this.parser = new MailParser();
+    this.mailObject = {
+      attachments: [],
+      text: {},
+      headers: {},
+    };
+    this.parsingStrategy = strategy;
     this.setupParser();
   }
 
@@ -19,23 +28,7 @@ export class EmailService {
     });
 
     this.parser.on('data', (data) => {
-      if (data.type === DataType.Attachment) {
-        const attachment: Attachment = {
-          filename: data.filename,
-          content: '',
-        };
-
-        data.content.on('data', (chunk: Buffer) => {
-          attachment.content += chunk.toString();
-        });
-
-        data.content.on('end', () => {
-          this.mailObject.attachments.push(attachment);
-          data.release();
-        });
-      } else {
-        this.mailObject.text = data;
-      }
+      this.parsingStrategy.applyStrategy(data);
     });
 
     this.parser.on('end', () => {
@@ -50,12 +43,6 @@ export class EmailService {
 
   private promiseResolver: (value?: MailObject) => void;
   private promiseRejecter: (reason?: any) => void;
-
-  private mailObject: MailObject = {
-    attachments: [],
-    text: {},
-    headers: {},
-  };
 
   private createPromise(): Promise<EmailData | never> {
     return new Promise((resolve, reject) => {
